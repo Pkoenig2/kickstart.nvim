@@ -99,7 +99,7 @@ do
   vim.g.maplocalleader = ' '
 
   -- Set to true if you have a Nerd Font installed and selected in the terminal
-  vim.g.have_nerd_font = false
+  vim.g.have_nerd_font = true
 
   -- [[ Setting options ]]
   --  See `:help vim.o`
@@ -110,7 +110,7 @@ do
   vim.o.number = true
   -- You can also add relative line numbers, to help with jumping.
   --  Experiment for yourself to see if you like it!
-  -- vim.o.relativenumber = true
+  vim.o.relativenumber = true
 
   -- Enable mouse mode, can be useful for resizing splits for example!
   vim.o.mouse = 'a'
@@ -220,10 +220,10 @@ do
   vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
   -- TIP: Disable arrow keys in normal mode
-  -- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
-  -- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
-  -- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
-  -- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
+  vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
+  vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
+  vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
+  vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
 
   -- Keybinds to make split navigation easier.
   --  Use CTRL+<hjkl> to switch between windows
@@ -375,7 +375,26 @@ do
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
     },
   }
+  --create open buffers to switch through
+  --[b and ]b to move between open files
+  vim.pack.add { gh 'akinsho/bufferline.nvim'}
+  vim.opt.termguicolors = true
+  require('bufferline').setup {
+    tag= "*",
+    dependencies = 'nvim-tree/nvim-web-devicons',
+  }
 
+  vim.pack.add({
+  { src = 'https://github.com/nvim-lua/plenary.nvim' },
+  { src = 'https://github.com/kdheepak/lazygit.nvim' },
+  })
+
+  -- Optional appearance config (these are globals, not a setup call)
+  vim.g.lazygit_floating_window_scaling_factor = 0.9
+  vim.g.lazygit_floating_window_winblend = 0
+
+  -- Keymap to open it
+  vim.keymap.set('n', '<leader>lg', '<cmd>LazyGit<cr>', { desc = 'Open LazyGit' })
   -- [[ Colorscheme ]]
   -- You can easily change to a different colorscheme.
   -- Change the name of the colorscheme plugin below, and then
@@ -694,7 +713,21 @@ do
   local servers = {
     -- clangd = {},
     -- gopls = {},
-    -- pyright = {},
+    pyright = {
+      settings = {
+        python = {
+          -- The venv fix: resolve packages from your activated venv.
+          -- Evaluated at startup, so activate the venv in PowerShell BEFORE launching nvim.
+          pythonPath = vim.env.VIRTUAL_ENV
+            and (vim.env.VIRTUAL_ENV .. '/Scripts/python.exe') -- Windows path
+            or nil,
+        },
+        pyright = {
+          -- Let Ruff organize imports instead of Pyright (avoids the two fighting)
+          disableOrganizeImports = true,
+        },
+      },
+    },
     -- rust_analyzer = {},
     --
     -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -702,6 +735,23 @@ do
     --
     -- But for many setups, the LSP (`ts_ls`) will work just fine
     -- ts_ls = {},
+
+    ruff = {
+      -- Ruff is your linter/formatter; let Pyright own hover & type info.
+      -- (Same idea as disabling lua_ls formatting because stylua handles it.)
+      on_init = function(client)
+        client.server_capabilities.hoverProvider = false
+      end,
+      -- Optional: configure Ruff here. NOTE the unusual nesting — Ruff reads
+      -- its config from `init_options.settings`, NOT a top-level `settings` table.
+      init_options = {
+        settings = {
+        -- lineLength = 88,
+        -- lint = { select = { 'E', 'F', 'I' } },
+        },
+      },
+    },
+
 
     stylua = {}, -- Used to format Lua code
 
@@ -747,7 +797,7 @@ do
     gh 'WhoIsSethDaniel/mason-tool-installer.nvim',
   }
 
-  -- Automatically install LSPs and related tools to stdpath for Neovim
+   -- Automatically install LSPs and related tools to stdpath for Neovim
   require('mason').setup {}
 
   -- Ensure the servers and tools above are installed
@@ -770,6 +820,28 @@ do
   end
 end
 
+ vim.pack.add {
+    gh 'dstein64/nvim-scrollview'
+  }
+
+
+  require('scrollview').setup({
+    excluded_filetypes = {'nerdtree'},
+    current_only = true,
+    base = 'right',
+    column = 2,
+    signs_on_startup = {'all'},
+    diagnostics_severities = {vim.diagnostic.severity.ERROR}
+  })
+
+  vim.api.nvim_create_autocmd({ 'BufWinEnter', 'BufEnter' }, {
+    callback = function()
+      vim.schedule(function()
+        pcall(vim.cmd.ScrollViewRefresh)
+      end)
+    end,
+  })
+
 -- ============================================================
 -- SECTION 7: FORMATTING
 -- conform.nvim setup and keymap
@@ -783,7 +855,7 @@ do
       -- You can specify filetypes to autoformat on save here:
       local enabled_filetypes = {
         -- lua = true,
-        -- python = true,
+        python = true,
       }
       if enabled_filetypes[vim.bo[bufnr].filetype] then
         return { timeout_ms = 500 }
@@ -798,7 +870,7 @@ do
     formatters_by_ft = {
       -- rust = { 'rustfmt' },
       -- Conform can also run multiple formatters sequentially
-      -- python = { "isort", "black" },
+      python = { "ruff"},
       --
       -- You can use 'stop_after_first' to run the first available formatter from the list
       -- javascript = { "prettierd", "prettier", stop_after_first = true },
@@ -824,8 +896,8 @@ do
   --    See the README about individual language/framework/plugin snippets:
   --    https://github.com/rafamadriz/friendly-snippets
   --
-  -- vim.pack.add { gh 'rafamadriz/friendly-snippets' }
-  -- require('luasnip.loaders.from_vscode').lazy_load()
+  vim.pack.add { gh 'rafamadriz/friendly-snippets' }
+  require('luasnip.loaders.from_vscode').lazy_load()
 
   -- [[ Autocomplete Engine ]]
   vim.pack.add { { src = gh 'saghen/blink.cmp', version = vim.version.range '1.*' } }
@@ -904,7 +976,7 @@ do
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
 
   -- Ensure basic parsers are installed
-  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python' }
   require('nvim-treesitter').install(parsers)
 
   ---@param buf integer
@@ -966,12 +1038,12 @@ do
   --  Here are some example plugins that I've included in the Kickstart repository.
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
-  -- require 'kickstart.plugins.debug'
-  -- require 'kickstart.plugins.indent_line'
-  -- require 'kickstart.plugins.lint'
-  -- require 'kickstart.plugins.autopairs'
-  -- require 'kickstart.plugins.neo-tree'
-  -- require 'kickstart.plugins.gitsigns' -- adds gitsigns recommended keymaps
+  require 'kickstart.plugins.debug'
+  require 'kickstart.plugins.indent_line'
+  require 'kickstart.plugins.lint'
+  require 'kickstart.plugins.autopairs'
+  require 'kickstart.plugins.neo-tree'
+  require 'kickstart.plugins.gitsigns' -- adds gitsigns recommended keymaps
 
   -- NOTE: You can add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --
