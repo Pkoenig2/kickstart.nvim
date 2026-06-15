@@ -389,13 +389,13 @@ do
   { src = 'https://github.com/kdheepak/lazygit.nvim' },
   })
 
-  -- Optional appearance config (these are globals, not a setup call)
-  vim.g.lazygit_floating_window_scaling_factor = 0.9
-  vim.g.lazygit_floating_window_winblend = 0
+    -- Optional appearance config (these are globals, not a setup call)
+    vim.g.lazygit_floating_window_scaling_factor = 0.9
+    vim.g.lazygit_floating_window_winblend = 0
 
-  -- Keymap to open it
-  vim.keymap.set('n', '<leader>lg', '<cmd>LazyGit<cr>', { desc = 'Open LazyGit' })
-  -- [[ Colorscheme ]]
+    -- Keymap to open it
+    vim.keymap.set('n', '<leader>lg', '<cmd>LazyGit<cr>', { desc = 'Open LazyGit' })
+    -- [[ Colorscheme ]]
   -- You can easily change to a different colorscheme.
   -- Change the name of the colorscheme plugin below, and then
   -- change the command under that to load whatever the name of that colorscheme is.
@@ -409,6 +409,32 @@ do
     },
   }
 
+  vim.pack.add({
+    { src = 'https://github.com/Isrothy/neominimap.nvim' },
+  })
+
+  -- neominimap is configured via a global table, not a setup() call
+  vim.g.neominimap = {
+    auto_enable = true,
+  }
+
+  vim.pack.add({
+    { src = 'https://github.com/nvimdev/dashboard-nvim' },
+  })
+
+  require('dashboard').setup({
+    theme = 'hyper',
+    config = {
+      week_header = { enable = true },
+      shortcut = {
+        { desc = '󰊳 Update', group = '@property', action = 'lua vim.pack.update()', key = 'u' },
+        { icon = ' ', icon_hl = '@variable', desc = 'Files', group = 'Label', action = 'Telescope find_files', key = 'f' },
+        { desc = ' Apps', group = 'DiagnosticHint', action = 'Telescope app', key = 'a' },
+        { desc = ' dotfiles', group = 'Number', action = 'Telescope dotfiles', key = 'd' },
+      },
+    },
+  })
+  
   -- Load the colorscheme here.
   -- Like many other themes, this one has different styles, and you could load
   -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
@@ -607,6 +633,19 @@ end
 -- SECTION 6: LSP
 -- LSP keymaps, server configuration, Mason tools installations
 -- ============================================================
+--
+local function python_path()
+  -- venv (Windows: Scripts/python.exe)
+  if vim.env.VIRTUAL_ENV then
+    return vim.env.VIRTUAL_ENV .. '/Scripts/python.exe'
+  end
+  -- conda (Windows: python.exe lives in the env root, no Scripts)
+  if vim.env.CONDA_PREFIX then
+    return vim.env.CONDA_PREFIX .. '/python.exe'
+  end
+  return nil
+end
+
 do
   -- [[ LSP Configuration ]]
   -- Brief aside: **What is LSP?**
@@ -718,10 +757,9 @@ do
         python = {
           -- The venv fix: resolve packages from your activated venv.
           -- Evaluated at startup, so activate the venv in PowerShell BEFORE launching nvim.
-          pythonPath = vim.env.VIRTUAL_ENV
-            and (vim.env.VIRTUAL_ENV .. '/Scripts/python.exe') -- Windows path
-            or nil,
-        },
+          
+            pythonPath = python_path(),
+          },
         pyright = {
           -- Let Ruff organize imports instead of Pyright (avoids the two fighting)
           disableOrganizeImports = true,
@@ -737,17 +775,13 @@ do
     -- ts_ls = {},
 
     ruff = {
-      -- Ruff is your linter/formatter; let Pyright own hover & type info.
-      -- (Same idea as disabling lua_ls formatting because stylua handles it.)
       on_init = function(client)
         client.server_capabilities.hoverProvider = false
       end,
-      -- Optional: configure Ruff here. NOTE the unusual nesting — Ruff reads
-      -- its config from `init_options.settings`, NOT a top-level `settings` table.
       init_options = {
         settings = {
-        -- lineLength = 88,
-        -- lint = { select = { 'E', 'F', 'I' } },
+          lineLength = 88,
+          lint = { select = { 'E', 'F', 'I' } },
         },
       },
     },
