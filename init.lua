@@ -279,8 +279,18 @@ do
   --  In this section we set up some autocommands to run build
   --  steps for certain plugins after they are installed or updated.
 
+  vim.pack.add({
+    { src = "https://github.com/folke/lazydev.nvim" },
+  })
+
+  require('lazydev').setup({
+    library = {
+      { path = "${3rd}/luv/library", words = { "vim%.uv" } },
+    },
+  })
   local function run_build(name, cmd, cwd)
-    local result = vim.system(cmd, { cwd = cwd }):wait()
+
+  local result = vim.system(cmd, { cwd = cwd }):wait()
     if result.code ~= 0 then
       local stderr = result.stderr or ''
       local stdout = result.stdout or ''
@@ -1008,9 +1018,9 @@ do
 
   -- NOTE: You can also specify a branch or a specific commit
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
-
+  require('nvim-treesitter.install').compilers = { 'zig' }
   -- Ensure basic parsers are installed
-  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python' }
+  local parsers = {'zig', 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python' }
   require('nvim-treesitter').install(parsers)
 
   ---@param buf integer
