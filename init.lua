@@ -683,7 +683,8 @@ do
   -- If you're wondering about lsp vs treesitter, you can check out the wonderfully
   -- and elegantly composed help section, `:help lsp-vs-treesitter`
 
-  -- Useful status updates for LSP.
+
+   -- Useful status updates for LSP.
   vim.pack.add { gh 'j-hui/fidget.nvim' }
   require('fidget').setup {}
 
@@ -844,6 +845,22 @@ do
    -- Automatically install LSPs and related tools to stdpath for Neovim
   require('mason').setup {}
 
+  vim.pack.add({
+    { src = "https://github.com/mrcjkb/rustaceanvim" },
+  })
+
+  vim.g.rustaceanvim = {
+    server = {
+      on_attach = function(client, bufnr)
+        vim.keymap.set("n", "<C-space>", function()
+          vim.cmd.RustLsp { 'hover', 'actions' }
+        end, { buffer = bufnr })
+        vim.keymap.set("n", "<Leader>a", function()
+          vim.cmd.RustLsp('codeAction')
+        end, { buffer = bufnr })
+      end,
+    },
+  }
   -- Ensure the servers and tools above are installed
   --
   -- To check the current status of installed tools and/or manually install
@@ -864,8 +881,8 @@ do
   end
 end
 
- vim.pack.add {
-    gh 'dstein64/nvim-scrollview'
+  vim.pack.add {
+    gh 'dstein64/nvim-scrollview',
   }
 
 
@@ -885,6 +902,7 @@ end
       end)
     end,
   })
+
 
 -- ============================================================
 -- SECTION 7: FORMATTING
@@ -1020,7 +1038,7 @@ do
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
   require('nvim-treesitter.install').compilers = { 'zig' }
   -- Ensure basic parsers are installed
-  local parsers = {'zig', 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python' }
+  local parsers = {'zig', 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python', "rust" }
   require('nvim-treesitter').install(parsers)
 
   ---@param buf integer
